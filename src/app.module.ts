@@ -10,11 +10,11 @@ import { Neo4jModule } from './neo4j/neo4j.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     Neo4jModule.forRoot({
-      schema: 'neo4j+s',
-      host: '8e5ae70a.databases.neo4j.io',
-      port: '7687',
-      username: 'neo4j',
-      password: 'oFH_44iUUaL8Oir9aVbHswLlybE0_ZRqI2MxjUJOW8o',
+      schema: 'neo4j',
+      host: process.env.DB_SCHEMA,
+      port: process.env.DB_PORT,
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
     }),
     CommentsModule,
     PostsModule,
