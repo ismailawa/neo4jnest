@@ -30,7 +30,7 @@ export class CommentDao {
   ): Promise<any> | null {
     const object = classToPlain(updateCommentDto);
     console.log(object);
-    return this.neo4jService.read(
+    return this.neo4jService.write(
       `MATCH (c:Comment) WHERE ID(c)=${id} SET c +=${object} RETURN p`,
     );
   }

@@ -10,7 +10,7 @@ import { Neo4jModule } from './neo4j/neo4j.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     Neo4jModule.forRoot({
-      schema: 'neo4j+s',
+      schema: 'bolt',
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,
       username: process.env.DB_USERNAME,

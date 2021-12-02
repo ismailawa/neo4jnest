@@ -19,8 +19,17 @@ export class ResultInterceptor<T> implements NestInterceptor<T, Response<T>> {
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
-    return next
-      .handle()
-      .pipe(map((data) => ({ code: 200, data, message: 'success' })));
+    return next.handle().pipe(
+      map((data: any) => ({
+        code: 200,
+        data: data.records.map((record) => {
+          return {
+            id: record._fields[0].identity.low,
+            ...record._fields[0].properties,
+          };
+        }),
+        message: 'success',
+      })),
+    );
   }
 }
