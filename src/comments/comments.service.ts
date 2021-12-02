@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CommentDao } from './doa/comment-doa';
+import { CommentDao } from './dao/comment-dao';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 

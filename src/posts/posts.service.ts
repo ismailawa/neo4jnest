@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PostDao } from './doa/post-doa';
+import { PostDao } from './dao/post-dao';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 

@@ -6,26 +6,31 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { ResultInterceptor } from 'src/shared/result';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
+  @UseInterceptors(new ResultInterceptor())
   create(@Body() createPostDto: CreatePostDto) {
     return this.postsService.create(createPostDto);
   }
 
   @Get()
+  @UseInterceptors(new ResultInterceptor())
   findAll() {
     return this.postsService.findAll();
   }
 
   @Get(':id')
+  @UseInterceptors(new ResultInterceptor())
   findOne(@Param('id') id: string) {
     return this.postsService.findOne(+id);
   }

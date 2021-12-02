@@ -6,7 +6,9 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
 } from '@nestjs/common';
+import { ResultInterceptor } from 'src/shared/result';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -21,11 +23,13 @@ export class CommentsController {
   }
 
   @Get()
+  @UseInterceptors(new ResultInterceptor())
   findAll() {
     return this.commentsService.findAll();
   }
 
   @Get(':id')
+  @UseInterceptors(new ResultInterceptor())
   findOne(@Param('id') id: string) {
     return this.commentsService.findOne(+id);
   }
