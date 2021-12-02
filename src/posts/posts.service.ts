@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from 'src/neo4j/neo4j.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
