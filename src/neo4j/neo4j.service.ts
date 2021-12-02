@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import neo4j, { Driver, Result } from 'neo4j-driver';
-import { Neo4jConfig } from 'nest-neo4j/dist/interfaces/neo4j-config.interface';
+
 import { NEO4J_CONFIG, NEO4J_DRIVER } from 'src/shared/constants';
+import { Neo4jConfig } from 'src/shared/neo4j-config.interface';
 
 @Injectable()
 export class Neo4jService {
@@ -31,11 +32,15 @@ export class Neo4jService {
     });
   }
 
-  read(cyper: string, params: Record<string, any>, database?: string): Result {
+  read(cyper: string, params?: Record<string, any>, database?: string): Result {
     const session = this.getReadSession(database);
     return session.run(cyper, params);
   }
-  write(cyper: string, params: Record<string, any>, database?: string): Result {
+  write(
+    cyper: string,
+    params?: Record<string, any>,
+    database?: string,
+  ): Result {
     const session = this.getWriteSession(database);
     return session.run(cyper, params);
   }
