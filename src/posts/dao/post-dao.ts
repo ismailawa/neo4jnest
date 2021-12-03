@@ -5,11 +5,13 @@ import { UpdatePostDto } from '../dto/update-post.dto';
 import { COMMENT, POST } from 'src/shared/constants';
 import { QueryResult } from 'neo4j-driver';
 import { classToPlain } from 'class-transformer';
+import neo4j from 'neo4j-driver';
 import { nanoid } from 'nanoid';
 
 @Injectable()
 export class PostDao {
   constructor(private readonly neo4jService: Neo4jService) {}
+
   /**
    * create post
    * @param postDto
@@ -27,16 +29,32 @@ export class PostDao {
       payload,
     });
   }
+
   /**
    * get all post
    * @param id
    */
-  async getAllPost(skip: string, limit: string): Promise<any> | null {
-    const query = `MATCH (p:${POST}), (c:${COMMENT}) OPTIONAL MATCH (p)<-[r: BelongsTo]-(c) RETURN p ,r ORDER BY p.createdAt`;
-    return await this.neo4jService.read(query, {
-      skip: parseInt(skip, 10),
-      limit: parseInt(limit, 10),
+  async getAllPost(skip: number, limit: number): Promise<any> | null {
+    const query = `MATCH (p:${POST})  OPTIONAL MATCH (p)<-[r: BelongsTo]-(c:${COMMENT}) WITH COLLECT({id: p.id,title: p.title, content: p.content, comment: c }) AS pcommects RETURN pcommects SKIP $skip LIMIT $limit`;
+    const result = await this.neo4jService.read(query, {
+      skip: neo4j.int(skip),
+      limit: neo4j.int(limit),
     });
+
+    const obj = result.records[0]['_fields'][0];
+
+    return obj
+      .map((post) => ({
+        id: post.id,
+        title: post.title,
+        content: post.content,
+      }))
+      .map((post) => ({
+        ...post,
+        comments: obj
+          .filter((comment) => comment.id === post.id)
+          .map((comment) => ({ ...comment.comment })),
+      }));
   }
 
   async getAllPostWithRelationship(): Promise<any> | null {
@@ -68,6 +86,7 @@ export class PostDao {
       { id, updateValues: object },
     );
   }
+
   /**
    * delete post
    * @param id

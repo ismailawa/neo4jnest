@@ -22,11 +22,7 @@ export class ResultInterceptor<T> implements NestInterceptor<T, Response<T>> {
     return next.handle().pipe(
       map((data: any) => ({
         code: 200,
-        data: data.records.map((record) => {
-          return {
-            ...record._fields[0].properties,
-          };
-        }),
+        data: data,
         message: 'success',
       })),
     );

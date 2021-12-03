@@ -10,7 +10,7 @@ export class PostsService {
     return this.postDao.createPost(createPostDto);
   }
 
-  findAll(skip = '0', limit = '10') {
+  findAll(skip = 0, limit = 100) {
     return this.postDao.getAllPost(skip, limit);
   }
 

@@ -25,8 +25,9 @@ export class PostsController {
   }
 
   @Get()
-  // @UseInterceptors(new ResultInterceptor())
+  @UseInterceptors(new ResultInterceptor())
   findAll(@Query() { skip, limit }) {
+    console.log(limit, skip);
     return this.postsService.findAll(skip, limit);
   }
 
