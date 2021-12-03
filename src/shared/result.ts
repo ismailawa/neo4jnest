@@ -24,7 +24,6 @@ export class ResultInterceptor<T> implements NestInterceptor<T, Response<T>> {
         code: 200,
         data: data.records.map((record) => {
           return {
-            id: record._fields[0].identity.low,
             ...record._fields[0].properties,
           };
         }),

@@ -10,19 +10,19 @@ export class PostsService {
     return this.postDao.createPost(createPostDto);
   }
 
-  findAll() {
-    return this.postDao.getAllPost();
+  findAll(skip = '0', limit = '10') {
+    return this.postDao.getAllPost(skip, limit);
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return this.postDao.getAPost(id);
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
+  update(id: string, updatePostDto: UpdatePostDto) {
     return this.postDao.updatePost(id, updatePostDto);
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return this.postDao.deletePost(id);
   }
 }

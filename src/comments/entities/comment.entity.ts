@@ -1,1 +1,3 @@
-export class Comment {}
+export interface Comment {
+  id: string;
+}

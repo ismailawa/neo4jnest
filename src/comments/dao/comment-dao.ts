@@ -3,6 +3,8 @@ import { Neo4jService } from 'src/neo4j/neo4j.service';
 import { classToPlain } from 'class-transformer';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
+import { nanoid } from 'nanoid';
+import { COMMENT } from 'src/shared/constants';
 
 @Injectable()
 export class CommentDao {
@@ -12,32 +14,35 @@ export class CommentDao {
    * @param createCommentDto
    */
   async createComment(createCommentDto: CreateCommentDto): Promise<any> | null {
-    return this.neo4jService.write(
-      `MATCH (p:Post) WHERE ID(p)=${createCommentDto.postId} CREATE (p) <- [r: BelongsTo] - (c:Comment {content: '${createCommentDto.content}', status: '${createCommentDto.status}', postId: '${createCommentDto.postId}'}) RETURN c`,
-    );
+    const comment = { id: nanoid(8), ...createCommentDto };
+    const query = `MATCH (p:${COMMENT} {id: $postId})  CREATE (p) <- [r: BelongsTo] - (c:Comment $createComment), (p)-[s: HasMany]->(c)  RETURN c`;
+
+    return this.neo4jService.write(query, {
+      postId: createCommentDto.postId,
+      createComment: comment,
+    });
   }
   async getAllComments(): Promise<any> | null {
-    return this.neo4jService.read(`MATCH (c:Comment) RETURN c`);
+    const query = `MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN c, p`;
+    return this.neo4jService.read(query);
   }
-  async getComment(id: number): Promise<any> | null {
-    return this.neo4jService.read(
-      `MATCH (c:Comment) WHERE ID(p)=${id} RETURN c`,
-    );
+  async getComment(id: string): Promise<any> | null {
+    return this.neo4jService.read(`MATCH (c:${COMMENT} {id: $id})  RETURN c`, {
+      id,
+    });
   }
   async updateComment(
-    id: number,
+    id: string,
     updateCommentDto: UpdateCommentDto,
   ): Promise<any> | null {
     const object = classToPlain(updateCommentDto);
     console.log(object);
-    return this.neo4jService.write(
-      `MATCH (c:Comment) WHERE ID(c)=${id} SET c +=${object} RETURN p`,
-    );
+    const query = `MATCH (c:${COMMENT} {id: $id}) SET c +=$updateValues RETURN c`;
+    return this.neo4jService.write(query, { id, updateValues: object });
   }
 
-  async deleteComment(id: number): Promise<any> | null {
-    return this.neo4jService.read(
-      `MATCH (c:Comment) WHERE ID(c)=${id} DELETE c RETURN p`,
-    );
+  async deleteComment(id: string): Promise<any> | null {
+    const query = `MATCH (c:${COMMENT}{id: $id}) DETACH DELETE c RETURN c`;
+    return this.neo4jService.write(query, { id });
   }
 }
