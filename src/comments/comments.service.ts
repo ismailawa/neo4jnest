@@ -14,15 +14,15 @@ export class CommentsService {
     return this.commentDao.getAllComments();
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return this.commentDao.getComment(id);
   }
 
-  update(id: number, updateCommentDto: UpdateCommentDto) {
+  update(id: string, updateCommentDto: UpdateCommentDto) {
     return this.commentDao.updateComment(id, updateCommentDto);
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return this.commentDao.deleteComment(id);
   }
 }

@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -25,23 +26,25 @@ export class PostsController {
 
   @Get()
   @UseInterceptors(new ResultInterceptor())
-  findAll() {
-    return this.postsService.findAll();
+  findAll(@Query() { skip, limit }) {
+    console.log(limit, skip);
+    return this.postsService.findAll(skip, limit);
   }
 
   @Get(':id')
   @UseInterceptors(new ResultInterceptor())
   findOne(@Param('id') id: string) {
-    return this.postsService.findOne(+id);
+    return this.postsService.findOne(id);
   }
 
   @Patch(':id')
+  @UseInterceptors(new ResultInterceptor())
   update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
-    return this.postsService.update(+id, updatePostDto);
+    return this.postsService.update(id, updatePostDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.postsService.remove(+id);
+    return this.postsService.remove(id);
   }
 }
