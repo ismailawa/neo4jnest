@@ -26,6 +26,16 @@ export class DtoException extends BaseException {
     super(400, message, detail);
   }
 }
+export class ServerException extends BaseException {
+  constructor(message = 'parameter error', detail?: string) {
+    super(500, message, detail);
+  }
+}
+export class NotFoundException extends BaseException {
+  constructor(message = 'parameter error', detail?: string) {
+    super(404, message, detail);
+  }
+}
 /**
  * Permission exception
  */
