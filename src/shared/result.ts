@@ -22,7 +22,9 @@ export class ResultInterceptor<T> implements NestInterceptor<T, Response<T>> {
     return next.handle().pipe(
       map((data: any) => ({
         code: 200,
-        data: data,
+        meta: data?.meta,
+        links: data?.links,
+        data: data.data,
         message: 'success',
       })),
     );

@@ -26,9 +26,13 @@ export class PostsController {
 
   @Get()
   @UseInterceptors(new ResultInterceptor())
-  findAll(@Query() { skip, limit }) {
+  findAll(
+    @Query('skip') skip = 0,
+    @Query('limit') limit = 10,
+    @Query('page') page = 1,
+  ) {
     console.log(limit, skip);
-    return this.postsService.findAll(skip, limit);
+    return this.postsService.findAll(skip, limit, page);
   }
 
   @Get(':id')

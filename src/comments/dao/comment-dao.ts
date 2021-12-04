@@ -4,7 +4,7 @@ import { classToPlain } from 'class-transformer';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { nanoid } from 'nanoid';
-import { COMMENT } from 'src/shared/constants';
+import { COMMENT, POST } from 'src/shared/constants';
 
 @Injectable()
 export class CommentDao {
@@ -15,16 +15,20 @@ export class CommentDao {
    */
   async createComment(createCommentDto: CreateCommentDto): Promise<any> | null {
     const comment = { id: nanoid(8), ...createCommentDto };
-    const query = `MATCH (p:${COMMENT} {id: $postId})  CREATE (p) <- [r: BelongsTo] - (c:Comment $createComment), (p)-[s: HasMany]->(c)  RETURN c`;
+    const query = `MATCH (p:${POST} {id: $postId})  CREATE (p) <- [r: BelongsTo] - (c:Comment $createComment), (p)-[s: HasMany]->(c)  RETURN c`;
 
-    return this.neo4jService.write(query, {
+    const result = await this.neo4jService.write(query, {
       postId: createCommentDto.postId,
       createComment: comment,
     });
+    return { data: result.records[0].get['c'] };
   }
   async getAllComments(): Promise<any> | null {
-    const query = `MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN c, p`;
-    return this.neo4jService.read(query);
+    const query = `MATCH (c:${COMMENT}) RETURN c`;
+    const result = await this.neo4jService.read(query);
+    return {
+      data: result.records.map((record: any) => record),
+    };
   }
   async getComment(id: string): Promise<any> | null {
     return this.neo4jService.read(`MATCH (c:${COMMENT} {id: $id})  RETURN c`, {
