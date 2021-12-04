@@ -7,6 +7,7 @@ import { QueryResult } from 'neo4j-driver';
 import { classToPlain } from 'class-transformer';
 import neo4j from 'neo4j-driver';
 import { nanoid } from 'nanoid';
+import { paginate } from 'src/shared/helpers';
 
 @Injectable()
 export class PostDao {
@@ -16,7 +17,7 @@ export class PostDao {
    * create post
    * @param postDto
    */
-  async createPost(createPostDto: CreatePostDto): Promise<QueryResult> | null {
+  async createPost(createPostDto: CreatePostDto): Promise<any> | null {
     const payload = {
       id: nanoid(8),
       isActive: true,
@@ -25,17 +26,25 @@ export class PostDao {
       ...createPostDto,
     };
     const query = `CREATE (p:${POST} $payload) RETURN p`;
-    return await this.neo4jService.write(query, {
+    const result = await this.neo4jService.write(query, {
       payload,
     });
+
+    return { data: result.records[0].get('p').properties };
   }
 
   /**
    * get all post
    * @param id
    */
-  async getAllPost(skip: number, limit: number): Promise<any> | null {
-    const query = `MATCH (p:${POST})  OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,c  ORDER BY p.createdAt SKIP $skip LIMIT $limit`;
+  async getAllPost(
+    skip: number,
+    limit: number,
+    page: number,
+  ): Promise<any> | null {
+    const query = `MATCH (p:${POST}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,c  ORDER BY p.createdAt DESC SKIP $skip LIMIT $limit`;
+    const queryCount = `MATCH (p:${POST}) RETURN count(p) as count`;
+    const resultCount = await this.neo4jService.read(queryCount);
     const result = await this.neo4jService.read(query, {
       skip: neo4j.int(skip),
       limit: neo4j.int(limit),
@@ -62,8 +71,36 @@ export class PostDao {
 
       newObj.push(obj);
     }
-
-    return newObj;
+    console.log(result.records);
+    const paginations = paginate(
+      resultCount.records[0].get('count').low,
+      page,
+      limit,
+    );
+    console.log(paginations);
+    return {
+      data: newObj,
+      meta: {
+        totalItems: paginations.totalItems,
+        itemsPerPage: limit,
+        totalPages: paginations.totalPages,
+        currentPage: paginations.currentPage,
+      },
+      links: {
+        first: `http://localhost:3000/posts?page=${
+          paginations.pages[paginations.startIndex]
+        }`,
+        next:
+          paginations.pages[paginations.currentPage + 1] === undefined
+            ? ''
+            : `http://localhost:3000/posts?page=${
+                paginations.pages[paginations.currentPage + 1]
+              }`,
+        last: `http://localhost:3000/posts?page=${
+          paginations.pages[paginations.pages.length - 1]
+        }`,
+      },
+    };
   }
 
   async getAllPostWithRelationship(): Promise<any> | null {
@@ -82,8 +119,10 @@ export class PostDao {
       },
     );
     return {
-      ...result.records[0].get('p').properties,
-      comment: result.records[0].get('c').properties,
+      data: {
+        ...result.records[0].get('p').properties,
+        comment: result.records[0].get('c').properties,
+      },
     };
   }
 
@@ -97,10 +136,12 @@ export class PostDao {
     updatePostDto: UpdatePostDto,
   ): Promise<any> | null {
     const object = classToPlain(updatePostDto);
-    return await this.neo4jService.write(
+    const result = await this.neo4jService.write(
       `MATCH (p:${POST} {id: $id})  SET p +=$updateValue RETURN p`,
       { id, updateValues: object },
     );
+
+    return { data: result.records[0].get('p').properties };
   }
 
   /**
@@ -108,8 +149,10 @@ export class PostDao {
    * @param id
    */
   async deletePost(id: string): Promise<any> | null {
-    return await this.neo4jService.write(
+    const result = await this.neo4jService.write(
       `MATCH (p:${POST} {id:'${id}'})  DETACH DELETE p RETURN p`,
     );
+
+    return { data: result.records[0].get('p').properties };
   }
 }
