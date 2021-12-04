@@ -35,26 +35,35 @@ export class PostDao {
    * @param id
    */
   async getAllPost(skip: number, limit: number): Promise<any> | null {
-    const query = `MATCH (p:${POST})  OPTIONAL MATCH (p)<-[r: BelongsTo]-(c:${COMMENT}) WITH COLLECT({id: p.id,title: p.title, content: p.content, comment: c }) AS pcommects RETURN pcommects SKIP $skip LIMIT $limit`;
+    const query = `MATCH (p:${POST})  OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,c  ORDER BY p.createdAt SKIP $skip LIMIT $limit`;
     const result = await this.neo4jService.read(query, {
       skip: neo4j.int(skip),
       limit: neo4j.int(limit),
     });
 
-    const obj = result.records[0]['_fields'][0];
+    const postObjId = Array.from(
+      new Set(result.records.map((record) => record.get('p').properties.id)),
+    );
+    const postObj = result.records.map((record) => record.get('p').properties);
+    const commentObj = result.records.map((record) => record.get('c'));
 
-    return obj
-      .map((post) => ({
-        id: post.id,
-        title: post.title,
-        content: post.content,
-      }))
-      .map((post) => ({
-        ...post,
-        comments: obj
-          .filter((comment) => comment.id === post.id)
-          .map((comment) => ({ ...comment.comment })),
-      }));
+    const newObj = [];
+
+    for (let i = 0; i < postObjId.length; i++) {
+      const obj = { ...postObj[i], comments: [] };
+      for (let j = 0; j < commentObj.length; j++) {
+        // console.log(Array.from(new Set(postObj))[i]);
+
+        if (postObjId[i] === { ...commentObj[j] }.properties?.postId) {
+          obj.comments.push({ ...commentObj[j] }.properties);
+          console.log({ ...commentObj[j] }.properties.postId);
+        }
+      }
+
+      newObj.push(obj);
+    }
+
+    return newObj;
   }
 
   async getAllPostWithRelationship(): Promise<any> | null {
@@ -66,9 +75,16 @@ export class PostDao {
    * @param id
    */
   async getAPost(id: string): Promise<any> | null {
-    return await this.neo4jService.read(`MATCH (p:${POST} {id:$id}) RETURN p`, {
-      id,
-    });
+    const result = await this.neo4jService.read(
+      `MATCH (p:${POST} {id:$id}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p, c`,
+      {
+        id,
+      },
+    );
+    return {
+      ...result.records[0].get('p').properties,
+      comment: result.records[0].get('c').properties,
+    };
   }
 
   /**
