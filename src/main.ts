@@ -7,7 +7,11 @@ export class BaseExceptionFilter implements ExceptionFilter {
   catch(exception: BaseException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
-    response.json({ code: exception.code, message: exception.message });
+    response.json({
+      code: exception.code,
+      message: exception.message,
+      detail: exception.detail,
+    });
     console.error(
       // tslint:disable-line
       'BaseException code:%s message:%s \n%s',

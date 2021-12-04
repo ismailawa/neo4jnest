@@ -8,7 +8,7 @@ import {
   Delete,
   UseInterceptors,
 } from '@nestjs/common';
-import { ResultInterceptor } from 'src/shared/result';
+import { ResultInterceptor } from 'src/shared/result.interceptor';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';

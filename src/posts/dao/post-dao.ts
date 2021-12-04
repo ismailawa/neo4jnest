@@ -3,11 +3,11 @@ import { Neo4jService } from 'src/neo4j/neo4j.service';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
 import { COMMENT, POST } from 'src/shared/constants';
-import { QueryResult } from 'neo4j-driver';
 import { classToPlain } from 'class-transformer';
 import neo4j from 'neo4j-driver';
 import { nanoid } from 'nanoid';
 import { paginate } from 'src/shared/helpers';
+import { ServerException } from 'src/shared/base-exception';
 
 @Injectable()
 export class PostDao {
@@ -25,12 +25,18 @@ export class PostDao {
       updatedAt: Date.now(),
       ...createPostDto,
     };
-    const query = `CREATE (p:${POST} $payload) RETURN p`;
-    const result = await this.neo4jService.write(query, {
-      payload,
-    });
-
-    return { data: result.records[0].get('p').properties };
+    try {
+      const query = `CREATE (p:${POST} $payload) RETURN p`;
+      const result = await this.neo4jService.write(query, {
+        payload,
+      });
+      return { data: result.records[0].get('p').properties };
+    } catch (error) {
+      throw new ServerException(
+        error.message,
+        'Error occurd in create user dto',
+      );
+    }
   }
 
   /**
@@ -42,65 +48,74 @@ export class PostDao {
     limit: number,
     page: number,
   ): Promise<any> | null {
-    const query = `MATCH (p:${POST}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,c  ORDER BY p.createdAt DESC SKIP $skip LIMIT $limit`;
-    const queryCount = `MATCH (p:${POST}) RETURN count(p) as count`;
-    const resultCount = await this.neo4jService.read(queryCount);
-    const result = await this.neo4jService.read(query, {
-      skip: neo4j.int(skip),
-      limit: neo4j.int(limit),
-    });
+    try {
+      const query = `MATCH (p:${POST}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,c  ORDER BY p.createdAt DESC SKIP $skip LIMIT $limit`;
+      const queryCount = `MATCH (p:${POST}) RETURN count(p) as count`;
+      const resultCount = await this.neo4jService.read(queryCount);
+      const result = await this.neo4jService.read(query, {
+        skip: neo4j.int(skip),
+        limit: neo4j.int(limit),
+      });
 
-    const postObjId = Array.from(
-      new Set(result.records.map((record) => record.get('p').properties.id)),
-    );
-    const postObj = result.records.map((record) => record.get('p').properties);
-    const commentObj = result.records.map((record) => record.get('c'));
+      const postObjId = Array.from(
+        new Set(result.records.map((record) => record.get('p').properties.id)),
+      );
+      const postObj = result.records.map(
+        (record) => record.get('p').properties,
+      );
+      const commentObj = result.records.map((record) => record.get('c'));
 
-    const newObj = [];
+      const newObj = [];
 
-    for (let i = 0; i < postObjId.length; i++) {
-      const obj = { ...postObj[i], comments: [] };
-      for (let j = 0; j < commentObj.length; j++) {
-        // console.log(Array.from(new Set(postObj))[i]);
+      for (let i = 0; i < postObjId.length; i++) {
+        const obj = { ...postObj[i], comments: [] };
+        for (let j = 0; j < commentObj.length; j++) {
+          // console.log(Array.from(new Set(postObj))[i]);
 
-        if (postObjId[i] === { ...commentObj[j] }.properties?.postId) {
-          obj.comments.push({ ...commentObj[j] }.properties);
-          console.log({ ...commentObj[j] }.properties.postId);
+          if (postObjId[i] === { ...commentObj[j] }.properties?.postId) {
+            obj.comments.push({ ...commentObj[j] }.properties);
+            console.log({ ...commentObj[j] }.properties.postId);
+          }
         }
-      }
 
-      newObj.push(obj);
+        newObj.push(obj);
+      }
+      console.log(result.records);
+      const paginations = paginate(
+        resultCount.records[0].get('count').low,
+        page,
+        limit,
+      );
+      console.log(paginations);
+      return {
+        data: newObj,
+        meta: {
+          totalItems: paginations.totalItems,
+          itemsPerPage: limit,
+          totalPages: paginations.totalPages,
+          currentPage: paginations.currentPage,
+        },
+        links: {
+          first: `http://localhost:3000/posts?page=${
+            paginations.pages[paginations.startIndex]
+          }`,
+          next:
+            paginations.pages[paginations.currentPage + 1] === undefined
+              ? ''
+              : `http://localhost:3000/posts?page=${
+                  paginations.pages[paginations.currentPage + 1]
+                }`,
+          last: `http://localhost:3000/posts?page=${
+            paginations.pages[paginations.pages.length - 1]
+          }`,
+        },
+      };
+    } catch (error) {
+      throw new ServerException(
+        error.message,
+        'Error occurd in get all post dao',
+      );
     }
-    console.log(result.records);
-    const paginations = paginate(
-      resultCount.records[0].get('count').low,
-      page,
-      limit,
-    );
-    console.log(paginations);
-    return {
-      data: newObj,
-      meta: {
-        totalItems: paginations.totalItems,
-        itemsPerPage: limit,
-        totalPages: paginations.totalPages,
-        currentPage: paginations.currentPage,
-      },
-      links: {
-        first: `http://localhost:3000/posts?page=${
-          paginations.pages[paginations.startIndex]
-        }`,
-        next:
-          paginations.pages[paginations.currentPage + 1] === undefined
-            ? ''
-            : `http://localhost:3000/posts?page=${
-                paginations.pages[paginations.currentPage + 1]
-              }`,
-        last: `http://localhost:3000/posts?page=${
-          paginations.pages[paginations.pages.length - 1]
-        }`,
-      },
-    };
   }
 
   async getAllPostWithRelationship(): Promise<any> | null {
@@ -112,18 +127,22 @@ export class PostDao {
    * @param id
    */
   async getAPost(id: string): Promise<any> | null {
-    const result = await this.neo4jService.read(
-      `MATCH (p:${POST} {id:$id}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p, c`,
-      {
-        id,
-      },
-    );
-    return {
-      data: {
-        ...result.records[0].get('p').properties,
-        comment: result.records[0].get('c').properties,
-      },
-    };
+    try {
+      const result = await this.neo4jService.read(
+        `MATCH (p:${POST} {id:$id}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p, c`,
+        {
+          id,
+        },
+      );
+      return {
+        data: {
+          ...result.records[0].get('p').properties,
+          comment: result.records[0].get('c').properties,
+        },
+      };
+    } catch (error) {
+      throw new ServerException(error.message, 'Error occurd in get post dao');
+    }
   }
 
   /**
@@ -135,13 +154,20 @@ export class PostDao {
     id: string,
     updatePostDto: UpdatePostDto,
   ): Promise<any> | null {
-    const object = classToPlain(updatePostDto);
-    const result = await this.neo4jService.write(
-      `MATCH (p:${POST} {id: $id})  SET p +=$updateValue RETURN p`,
-      { id, updateValues: object },
-    );
+    try {
+      const object = classToPlain(updatePostDto);
+      const result = await this.neo4jService.write(
+        `MATCH (p:${POST} {id: $id})  SET p +=$updateValue RETURN p`,
+        { id, updateValues: object },
+      );
 
-    return { data: result.records[0].get('p').properties };
+      return { data: result.records[0].get('p').properties };
+    } catch (error) {
+      throw new ServerException(
+        error.message,
+        'Error occurd in update post dao',
+      );
+    }
   }
 
   /**
@@ -149,10 +175,16 @@ export class PostDao {
    * @param id
    */
   async deletePost(id: string): Promise<any> | null {
-    const result = await this.neo4jService.write(
-      `MATCH (p:${POST} {id:'${id}'})  DETACH DELETE p RETURN p`,
-    );
-
-    return { data: result.records[0].get('p').properties };
+    try {
+      const result = await this.neo4jService.write(
+        `MATCH (p:${POST} {id:'${id}'})  DELETE p RETURN p`,
+      );
+      return { data: result.records[0].get('p').properties };
+    } catch (error) {
+      throw new ServerException(
+        error.message,
+        'Error occurd in delete post dao',
+      );
+    }
   }
 }
