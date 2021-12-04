@@ -1,7 +1,7 @@
 import { createDriver } from './../shared/neo4j.util';
 import { DynamicModule, Global, Module } from '@nestjs/common';
-import { NEO4J_CONFIG, NEO4J_DRIVER } from 'src/shared/constants';
-import { Neo4jConfig } from 'src/shared/neo4j-config.interface';
+import { NEO4J_CONFIG, NEO4J_DRIVER } from '../shared/constants';
+import { Neo4jConfig } from '../shared/neo4j-config.interface';
 import { Neo4jService } from './neo4j.service';
 @Global()
 @Module({})

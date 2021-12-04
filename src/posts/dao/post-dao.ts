@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from 'src/neo4j/neo4j.service';
+import { Neo4jService } from '../../neo4j/neo4j.service';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
-import { COMMENT, POST } from 'src/shared/constants';
+import { COMMENT, POST } from '../../shared/constants';
 import { classToPlain } from 'class-transformer';
 import neo4j from 'neo4j-driver';
 import { nanoid } from 'nanoid';
-import { paginate } from 'src/shared/helpers';
-import { ServerException } from 'src/shared/base-exception';
+import { paginate } from '../../shared/helpers';
+import { ServerException } from '../../shared/base-exception';
 
 @Injectable()
 export class PostDao {
@@ -177,7 +177,7 @@ export class PostDao {
   async deletePost(id: string): Promise<any> | null {
     try {
       const result = await this.neo4jService.write(
-        `MATCH (p:${POST} {id:'${id}'})  DELETE p RETURN p`,
+        `MATCH (p:${POST} {id:'${id}'})  DETACH DELETE p RETURN p`,
       );
       return { data: result.records[0].get('p').properties };
     } catch (error) {

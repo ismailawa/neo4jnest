@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from 'src/neo4j/neo4j.service';
+import { Neo4jService } from '../../neo4j/neo4j.service';
 import { classToPlain } from 'class-transformer';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { nanoid } from 'nanoid';
-import { COMMENT, POST } from 'src/shared/constants';
+import { COMMENT, POST } from '../../shared/constants';
 
 @Injectable()
 export class CommentDao {
