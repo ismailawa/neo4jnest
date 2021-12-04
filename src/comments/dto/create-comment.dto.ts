@@ -1,5 +1,5 @@
 export class CreateCommentDto {
-  postId: number;
+  postId: string;
   content: string;
   isActive: boolean;
 }

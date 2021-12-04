@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import neo4j, { Driver, Result } from 'neo4j-driver';
 
-import { NEO4J_CONFIG, NEO4J_DRIVER } from 'src/shared/constants';
-import { Neo4jConfig } from 'src/shared/neo4j-config.interface';
+import { NEO4J_CONFIG, NEO4J_DRIVER } from '../shared/constants';
+import { Neo4jConfig } from '../shared/neo4j-config.interface';
 
 @Injectable()
 export class Neo4jService {
