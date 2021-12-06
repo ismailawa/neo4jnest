@@ -14,12 +14,14 @@ export class CommentDao {
    * @param createCommentDto
    */
   async createComment(createCommentDto: CreateCommentDto): Promise<any> | null {
-    const comment = { id: nanoid(8), ...createCommentDto };
-    const query = `MATCH (p:${POST} {id: $postId})  CREATE (p) <- [r: BelongsTo] - (c:Comment $createComment), (p)-[s: HasMany]->(c)  RETURN c`;
+    const query = `MATCH (p:${POST} {id: $postId})  CREATE (p) <- [r: BelongsTo] - (c:Comment {id: randomUUID(),content:$content, isActive:$isActive, createdAt: $createdAt, updatedAt: $updatedAt}), (p)-[s: HasMany]->(c)  RETURN c`;
 
     const result = await this.neo4jService.write(query, {
       postId: createCommentDto.postId,
-      createComment: comment,
+      content: createCommentDto.content,
+      isActive: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
     return { data: result.records[0].get['c'] };
   }
