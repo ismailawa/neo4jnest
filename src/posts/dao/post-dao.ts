@@ -19,16 +19,19 @@ export class PostDao {
    */
   async createPost(createPostDto: CreatePostDto): Promise<any> | null {
     const payload = {
-      id: nanoid(8),
       isActive: true,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       ...createPostDto,
     };
     try {
-      const query = `CREATE (p:${POST} $payload) RETURN p`;
+      const query = `CREATE (p:${POST} {id: randomUUID(), ttile: $title, content: $content, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt}) RETURN p`;
       const result = await this.neo4jService.write(query, {
-        payload,
+        title: createPostDto.title,
+        content: createPostDto.content,
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       });
       return { data: result.records[0].get('p').properties };
     } catch (error) {
@@ -49,7 +52,7 @@ export class PostDao {
     page: number,
   ): Promise<any> | null {
     try {
-      const query = `MATCH (p:${POST}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,c  ORDER BY p.createdAt DESC SKIP $skip LIMIT $limit`;
+      const query = `MATCH (p:${POST}) OPTIONAL MATCH (c:${COMMENT})-[r: BelongsTo]->(p) RETURN p,COLLECT(c) AS comments  ORDER BY p.createdAt DESC SKIP $skip LIMIT $limit`;
       const queryCount = `MATCH (p:${POST}) RETURN count(p) as count`;
       const resultCount = await this.neo4jService.read(queryCount);
       const result = await this.neo4jService.read(query, {
@@ -57,38 +60,19 @@ export class PostDao {
         limit: neo4j.int(limit),
       });
 
-      const postObjId = Array.from(
-        new Set(result.records.map((record) => record.get('p').properties.id)),
-      );
-      const postObj = result.records.map(
-        (record) => record.get('p').properties,
-      );
-      const commentObj = result.records.map((record) => record.get('c'));
-
-      const newObj = [];
-
-      for (let i = 0; i < postObjId.length; i++) {
-        const obj = { ...postObj[i], comments: [] };
-        for (let j = 0; j < commentObj.length; j++) {
-          // console.log(Array.from(new Set(postObj))[i]);
-
-          if (postObjId[i] === { ...commentObj[j] }.properties?.postId) {
-            obj.comments.push({ ...commentObj[j] }.properties);
-            console.log({ ...commentObj[j] }.properties.postId);
-          }
-        }
-
-        newObj.push(obj);
-      }
-      console.log(result.records);
       const paginations = paginate(
         resultCount.records[0].get('count').low,
         page,
         limit,
       );
-      console.log(paginations);
+      // console.log(paginations);
       return {
-        data: newObj,
+        data: result.records
+          .map((record) => record.toObject())
+          .map((object) => ({
+            ...object.p.properties,
+            comments: object.comments.map((c) => c?.properties),
+          })),
         meta: {
           totalItems: paginations.totalItems,
           itemsPerPage: limit,
